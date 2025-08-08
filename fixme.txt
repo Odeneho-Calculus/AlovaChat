@@ -1,0 +1,32 @@
+signalr.min.js:1 [2025-08-08T09:30:30.660Z] Information: Normalizing '/chathub' to 'http://localhost:5000/chathub'.
+VM21 blazor.server.js:1 [2025-08-08T09:30:30.671Z] Information: Normalizing '_blazor' to 'http://localhost:5000/_blazor'.
+signalr.min.js:1 [2025-08-08T09:30:30.759Z] Information: WebSocket connected to ws://localhost:5000/chathub?id=xalc6MJtwxtGOvxB1bk0KQ.
+signalr.min.js:1 [2025-08-08T09:30:30.759Z] Information: Using HubProtocol 'json'.
+VM20 chat.js:87 SignalR connection established
+VM21 blazor.server.js:1 [2025-08-08T09:30:30.793Z] Information: WebSocket connected to ws://localhost:5000/_blazor?id=AfmVU0LdqNJcg-l3zeK58Q.
+VM20 chat.js:374  Global error: SyntaxError: Identifier 'AlovaChatClient' has already been declared (at chat.js:1:1)
+(anonymous) @ VM20 chat.js:374
+chat.js:1  Uncaught SyntaxError: Identifier 'AlovaChatClient' has already been declared (at chat.js:1:1)
+blazor.server.js:1 [2025-08-08T09:30:30.934Z] Information: Normalizing '_blazor' to 'http://localhost:5000/_blazor'.
+blazor.server.js:1 [2025-08-08T09:30:30.945Z] Information: WebSocket connected to ws://localhost:5000/_blazor?id=ahB-WJX3-aHT_PxT2sMmUw.
+VM20 chat.js:114 Joined session: 43a212cd-b94b-47ec-b89a-cb50701833e8
+VM20 chat.js:374  Global error: ReferenceError: openWikipediaModal is not defined
+    at HTMLAnchorElement.onclick (?session=43a212cd-b94b-47ec-b89a-cb50701833e8:1:1)
+(anonymous) @ VM20 chat.js:374
+?session=43a212cd-b94b-47ec-b89a-cb50701833e8:1  Uncaught ReferenceError: openWikipediaModal is not defined
+    at HTMLAnchorElement.onclick (?session=43a212cd-b94b-47ec-b89a-cb50701833e8:1:1)
+VM20 chat.js:374  Global error: ReferenceError: openWikipediaModal is not defined
+    at HTMLAnchorElement.onclick (?session=43a212cd-b94b-47ec-b89a-cb50701833e8:1:1)
+(anonymous) @ VM20 chat.js:374
+?session=43a212cd-b94b-47ec-b89a-cb50701833e8:1  Uncaught ReferenceError: openWikipediaModal is not defined
+    at HTMLAnchorElement.onclick (?session=43a212cd-b94b-47ec-b89a-cb50701833e8:1:1)
+VM20 chat.js:374  Global error: ReferenceError: openWikipediaModal is not defined
+    at HTMLAnchorElement.onclick (?session=43a212cd-b94b-47ec-b89a-cb50701833e8:1:1)
+(anonymous) @ VM20 chat.js:374
+?session=43a212cd-b94b-47ec-b89a-cb50701833e8:1  Uncaught ReferenceError: openWikipediaModal is not defined
+    at HTMLAnchorElement.onclick (?session=43a212cd-b94b-47ec-b89a-cb50701833e8:1:1)
+VM20 chat.js:374  Global error: ReferenceError: openWikipediaModal is not defined
+    at HTMLAnchorElement.onclick (?session=43a212cd-b94b-47ec-b89a-cb50701833e8:1:1)
+(anonymous) @ VM20 chat.js:374
+?session=43a212cd-b94b-47ec-b89a-cb50701833e8:1  Uncaught ReferenceError: openWikipediaModal is not defined
+    at HTMLAnchorElement.onclick (?session=43a212cd-b94b-47ec-b89a-cb50701833e8:1:1)

@@ -1,0 +1,295 @@
+@page "/"
+@using System.Text.Json
+@using Microsoft.JSInterop
+@using Microsoft.AspNetCore.Components
+@inject IChatSessionService SessionService
+@inject IAIModelService ChatService
+@inject IJSRuntime JSRuntime
+@inject NavigationManager Navigation
+@implements IAsyncDisposable
+
+<PageTitle>AlovaChat - AI Assistant</PageTitle>
+
+<div class="chat-container">
+    @if (!string.IsNullOrEmpty(currentSessionId))
+    {
+        <div class="chat-messages" id="chat-messages">
+            @if (messages != null && messages.Any())
+            {
+                @foreach (var message in messages)
+                {
+                    <div class="message @(message.IsFromUser ? "user-message" : "ai-message")">
+                        <div class="message-avatar">
+                            @if (message.IsFromUser)
+                            {
+                                <i class="fas fa-user"></i>
+                            }
+                            else
+                            {
+                                <i class="fas fa-robot"></i>
+                            }
+                        </div>
+                        <div class="message-content">
+                            <div class="message-text">@((MarkupString)message.Content)</div>
+                            <div class="message-time">@message.Timestamp.ToString("HH:mm")</div>
+                        </div>
+                    </div>
+                }
+            }
+            else if (isLoadingMessages)
+            {
+                <div class="loading-messages">
+                    <div class="spinner-border me-2" role="status"></div>
+                    Loading conversation...
+                </div>
+            }
+
+            @if (isTyping)
+            {
+                <div class="message ai-message typing-indicator">
+                    <div class="message-avatar">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <div class="message-content">
+                        <div class="typing-dots">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="chat-input-container">
+            <div class="input-group">
+                <input type="text"
+                       class="form-control chat-input"
+                       placeholder="Type your message here..."
+                       @bind="currentMessage"
+                       @onkeypress="HandleKeyPress"
+                       disabled="@isSending" />
+                <button class="btn btn-primary send-button"
+                        @onclick="SendMessage"
+                        disabled="@(isSending || string.IsNullOrWhiteSpace(currentMessage))">
+                    @if (isSending)
+                    {
+                        <div class="spinner-border spinner-border-sm" role="status"></div>
+                    }
+                    else
+                    {
+                        <i class="fas fa-paper-plane"></i>
+                    }
+                </button>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="welcome-screen">
+            <div class="welcome-content">
+                <div class="welcome-icon">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <h1>Welcome to AlovaChat</h1>
+                <p class="lead">Your intelligent AI assistant is ready to help you with any questions or tasks.</p>
+                <div class="welcome-features">
+                    <div class="feature">
+                        <i class="fas fa-brain"></i>
+                        <span>Intelligent Conversations</span>
+                    </div>
+                    <div class="feature">
+                        <i class="fas fa-history"></i>
+                        <span>Session History</span>
+                    </div>
+                    <div class="feature">
+                        <i class="fas fa-shield-alt"></i>
+                        <span>Privacy Focused</span>
+                    </div>
+                </div>
+                <button class="btn btn-primary btn-lg" @onclick="StartNewChat">
+                    <i class="fas fa-plus me-2"></i>
+                    Start New Chat
+                </button>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private string? currentSessionId;
+    private string currentMessage = string.Empty;
+    private List<ChatMessageDto>? messages;
+    private bool isSending = false;
+    private bool isTyping = false;
+    private bool isLoadingMessages = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JSRuntime.InvokeVoidAsync("initializeChatHub", DotNetObjectReference.Create(this));
+
+            var sessionId = await JSRuntime.InvokeAsync<string>("getSessionFromUrl");
+            if (!string.IsNullOrEmpty(sessionId))
+            {
+                await LoadSession(sessionId);
+            }
+        }
+    }
+
+    private async Task StartNewChat()
+    {
+        try
+        {
+            var userId = await JSRuntime.InvokeAsync<string>("getUserId");
+            var session = await SessionService.CreateSessionAsync(userId);
+
+            currentSessionId = session.Id;
+            messages = new List<ChatMessageDto>();
+
+            await JSRuntime.InvokeVoidAsync("joinChatSession", session.Id);
+            await JSRuntime.InvokeVoidAsync("updateUrl", session.Id);
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Error creating new chat: {ex.Message}");
+        }
+    }
+
+    private async Task LoadSession(string sessionId)
+    {
+        try
+        {
+            isLoadingMessages = true;
+            StateHasChanged();
+
+            currentSessionId = sessionId;
+            var sessionMessages = await SessionService.GetSessionMessagesAsync(sessionId);
+            messages = sessionMessages.Select(m => new ChatMessageDto
+            {
+                Id = m.Id,
+                Content = m.Content,
+                IsFromUser = m.IsFromUser,
+                Timestamp = m.Timestamp
+            }).ToList();
+
+            await JSRuntime.InvokeVoidAsync("joinChatSession", sessionId);
+            await JSRuntime.InvokeVoidAsync("scrollToBottom");
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Error loading session: {ex.Message}");
+        }
+        finally
+        {
+            isLoadingMessages = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task SendMessage()
+    {
+        if (string.IsNullOrWhiteSpace(currentMessage) || isSending || string.IsNullOrEmpty(currentSessionId))
+            return;
+
+        try
+        {
+            isSending = true;
+            var messageToSend = currentMessage;
+            currentMessage = string.Empty;
+
+            StateHasChanged();
+
+            await JSRuntime.InvokeVoidAsync("sendChatMessage", currentSessionId, messageToSend);
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Error sending message: {ex.Message}");
+            currentMessage = currentMessage; // Restore message
+        }
+        finally
+        {
+            isSending = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task HandleKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !e.ShiftKey)
+        {
+            await SendMessage();
+        }
+    }
+
+    [JSInvokable]
+    public async Task OnMessageReceived(object messageData)
+    {
+        try
+        {
+            var json = messageData.ToString();
+            var message = System.Text.Json.JsonSerializer.Deserialize<ChatMessageDto>(json!,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+            if (message != null)
+            {
+                messages ??= new List<ChatMessageDto>();
+                messages.Add(message);
+
+                await InvokeAsync(StateHasChanged);
+                await JSRuntime.InvokeVoidAsync("scrollToBottom");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error processing received message: {ex.Message}");
+        }
+        finally
+        {
+            isSending = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    [JSInvokable]
+    public async Task OnTypingIndicator(bool typing)
+    {
+        isTyping = typing;
+        await InvokeAsync(StateHasChanged);
+
+        if (typing)
+        {
+            await JSRuntime.InvokeVoidAsync("scrollToBottom");
+        }
+    }
+
+    [JSInvokable]
+    public async Task OnError(string error)
+    {
+        await JSRuntime.InvokeVoidAsync("alert", $"Chat error: {error}");
+        isSending = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            if (!string.IsNullOrEmpty(currentSessionId))
+            {
+                await JSRuntime.InvokeVoidAsync("leaveChatSession", currentSessionId);
+            }
+        }
+        catch (JSDisconnectedException)
+        {
+            // Circuit is already disconnected, ignore
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error during dispose: {ex.Message}");
+        }
+    }
+}

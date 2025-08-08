@@ -1,0 +1,92 @@
+@inherits LayoutComponentBase
+@namespace AlovaChat.Components
+
+<div class="page">
+    <div class="sidebar">
+        <nav class="nav-menu">
+            <div class="nav-header">
+                <button class="btn btn-primary new-chat-btn" @onclick="CreateNewChat">
+                    <i class="fas fa-plus me-2"></i>New Chat
+                </button>
+            </div>
+            <div class="nav-scrollable">
+                <div class="session-list">
+                    @if (isLoadingSessions)
+                    {
+                        <div class="loading-sessions">
+                            <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                            Loading sessions...
+                        </div>
+                    }
+                    else if (!sessions.Any())
+                    {
+                        <div class="no-sessions">
+                            <i class="fas fa-comments fa-2x mb-3"></i>
+                            <p>No chat sessions yet.<br />Start a new conversation!</p>
+                        </div>
+                    }
+                    else
+                    {
+                        @foreach (var session in sessions)
+                        {
+                            <div class="session-item @(session.Id == currentSessionId ? "active" : "")"
+                                 @onclick="() => SelectSession(session.Id)">
+                                <div class="session-content">
+                                    <div class="session-title">@session.Title</div>
+                                    <div class="session-meta">
+                                        <small class="text-muted">@session.LastActivity.ToString("MMM dd, HH:mm")</small>
+                                    </div>
+                                </div>
+                                <div class="session-actions">
+                                    <button class="btn btn-outline-danger btn-sm"
+                                            @onclick="() => DeleteSession(session.Id)"
+                                            @onclick:stopPropagation="true">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        </nav>
+    </div>
+
+    <main>
+        <div class="top-row">
+            <div class="navbar-brand">
+                <i class="fas fa-robot me-2"></i>AlovaChat
+            </div>
+            <div class="model-status">
+                <div id="status-indicator" class="status-indicator ready"></div>
+                <span id="status-text">AI Ready</span>
+            </div>
+        </div>
+
+        <article class="content">
+            @Body
+        </article>
+    </main>
+</div>
+
+@code {
+    private List<ChatSession> sessions = new();
+    private bool isLoadingSessions = false;
+    private string? currentSessionId;
+
+    private void CreateNewChat()
+    {
+        // This will be implemented with proper navigation
+    }
+
+    private void SelectSession(string sessionId)
+    {
+        currentSessionId = sessionId;
+        // This will be implemented with proper navigation
+    }
+
+    private void DeleteSession(string sessionId)
+    {
+        // This will be implemented with proper session management
+    }
+}
