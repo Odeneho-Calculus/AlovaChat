@@ -72,8 +72,8 @@ AlovaChat/
 
 1. **Clone the repository**
    ```bash
-   git clone <repository-url>
-   cd alovachat
+   git clone https://github.com/Odeneho-Calculus/AlovaChat.git
+   cd AlovaChat
    ```
 
 2. **Restore dependencies**
