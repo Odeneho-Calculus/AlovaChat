@@ -10,6 +10,7 @@ builder.Services.AddSignalR();
 
 // Add custom services
 builder.Services.AddScoped<IChatSessionService, ChatSessionService>();
+builder.Services.AddSingleton<ISessionEventService, SessionEventService>();
 // Use Wikipedia Search AI service (no API keys required, real Wikipedia content)
 builder.Services.AddSingleton<IAIModelService, WikipediaSearchAIService>();
 

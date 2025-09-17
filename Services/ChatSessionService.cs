@@ -5,12 +5,14 @@ namespace AlovaChat.Services;
 public class ChatSessionService : IChatSessionService
 {
     private readonly ILogger<ChatSessionService> _logger;
+    private readonly ISessionEventService _eventService;
     private readonly Dictionary<string, ChatSession> _sessions = new();
     private readonly Dictionary<string, List<ChatMessage>> _messages = new();
 
-    public ChatSessionService(ILogger<ChatSessionService> logger)
+    public ChatSessionService(ILogger<ChatSessionService> logger, ISessionEventService eventService)
     {
         _logger = logger;
+        _eventService = eventService;
     }
 
     public async Task<ChatSession> CreateSessionAsync(string userId, string? title = null)
@@ -28,6 +30,7 @@ public class ChatSessionService : IChatSessionService
         _messages[session.Id] = new List<ChatMessage>();
 
         _logger.LogInformation("Created new chat session {SessionId} for user {UserId}", session.Id, userId);
+        _eventService.NotifySessionCreated(session.Id);
         return await Task.FromResult(session);
     }
 
@@ -67,10 +70,17 @@ public class ChatSessionService : IChatSessionService
         // Update session timestamp
         if (_sessions.TryGetValue(sessionId, out var session))
         {
+            var titleUpdated = false;
             session.LastActivity = DateTime.UtcNow;
-            if (isFromUser && string.IsNullOrEmpty(session.Title))
+            if (isFromUser && string.IsNullOrWhiteSpace(session.Title))
             {
                 session.Title = content.Length > 50 ? content[..50] + "..." : content;
+                titleUpdated = true;
+            }
+
+            if (titleUpdated)
+            {
+                _eventService.NotifySessionUpdated(sessionId);
             }
         }
 
@@ -96,6 +106,7 @@ public class ChatSessionService : IChatSessionService
         if (removed)
         {
             _logger.LogInformation("Deleted session {SessionId}", sessionId);
+            _eventService.NotifySessionDeleted(sessionId);
         }
 
         return await Task.FromResult(removed);
@@ -108,6 +119,7 @@ public class ChatSessionService : IChatSessionService
             session.Title = title;
             session.LastActivity = DateTime.UtcNow;
             _logger.LogInformation("Updated session {SessionId} title to: {Title}", sessionId, title);
+            _eventService.NotifySessionUpdated(sessionId);
             return await Task.FromResult(session);
         }
 

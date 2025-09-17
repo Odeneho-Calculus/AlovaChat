@@ -151,6 +151,9 @@
             await JSRuntime.InvokeVoidAsync("joinChatSession", session.Id);
             await JSRuntime.InvokeVoidAsync("updateUrl", session.Id);
 
+            // Navigate to refresh the layout with new session
+            Navigation.NavigateTo($"/?session={session.Id}");
+
             StateHasChanged();
         }
         catch (Exception ex)
@@ -195,10 +198,11 @@
         if (string.IsNullOrWhiteSpace(currentMessage) || isSending || string.IsNullOrEmpty(currentSessionId))
             return;
 
+        var messageToSend = currentMessage;
+
         try
         {
             isSending = true;
-            var messageToSend = currentMessage;
             currentMessage = string.Empty;
 
             StateHasChanged();
@@ -208,7 +212,7 @@
         catch (Exception ex)
         {
             await JSRuntime.InvokeVoidAsync("alert", $"Error sending message: {ex.Message}");
-            currentMessage = currentMessage; // Restore message
+            currentMessage = messageToSend; // Restore message
         }
         finally
         {

@@ -342,63 +342,132 @@ public class WikipediaSearchAIService : IAIModelService, IDisposable
         // Remove common question words and improve search terms
         var cleanQuery = query.ToLowerInvariant().Trim();
 
+        // Remove greeting patterns at the beginning
+        cleanQuery = System.Text.RegularExpressions.Regex.Replace(cleanQuery, @"^(hi|hello|hey|greetings),?\s*", "", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+        // Handle conversational patterns
+        var conversationalPatterns = new[]
+        {
+            (@"can you tell me about\s+(.*)", "$1"),
+            (@"tell me about\s+(.*)", "$1"),
+            (@"i want to know about\s+(.*)", "$1"),
+            (@"i'd like to learn about\s+(.*)", "$1"),
+            (@"please explain\s+(.*)", "$1"),
+            (@"explain\s+(.*)", "$1"),
+            (@"what do you know about\s+(.*)", "$1"),
+            (@"give me information about\s+(.*)", "$1"),
+            (@"information about\s+(.*)", "$1"),
+            (@"search for\s+(.*)", "$1"),
+            (@"look up\s+(.*)", "$1"),
+            (@"find\s+(.*)", "$1")
+        };
+
+        foreach (var (pattern, replacement) in conversationalPatterns)
+        {
+            var regex = new System.Text.RegularExpressions.Regex(pattern, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            if (regex.IsMatch(cleanQuery))
+            {
+                cleanQuery = regex.Replace(cleanQuery, replacement).Trim();
+                break;
+            }
+        }
+
         // Handle common question patterns with better logic
-        if (cleanQuery.StartsWith("what is "))
+        var questionPatterns = new[]
         {
-            cleanQuery = cleanQuery.Substring(8); // Remove "what is "
-        }
-        else if (cleanQuery.StartsWith("what are "))
+            ("what is ", 8),
+            ("what are ", 9),
+            ("who is ", 7),
+            ("who are ", 8),
+            ("where is ", 9),
+            ("where are ", 10),
+            ("how does ", 9),
+            ("how do ", 7),
+            ("how is ", 7),
+            ("when was ", 9),
+            ("when were ", 10),
+            ("when is ", 8),
+            ("why is ", 7),
+            ("why are ", 8),
+            ("why do ", 7),
+            ("why does ", 9),
+            ("which is ", 9),
+            ("which are ", 10)
+        };
+
+        foreach (var (pattern, length) in questionPatterns)
         {
-            cleanQuery = cleanQuery.Substring(9); // Remove "what are "
-        }
-        else if (cleanQuery.StartsWith("who is "))
-        {
-            cleanQuery = cleanQuery.Substring(7); // Remove "who is "
-        }
-        else if (cleanQuery.StartsWith("where is "))
-        {
-            cleanQuery = cleanQuery.Substring(9); // Remove "where is "
-        }
-        else if (cleanQuery.StartsWith("how does "))
-        {
-            cleanQuery = cleanQuery.Substring(9); // Remove "how does "
-        }
-        else if (cleanQuery.StartsWith("when was "))
-        {
-            cleanQuery = cleanQuery.Substring(9); // Remove "when was "
-        }
-        else if (cleanQuery.StartsWith("why is "))
-        {
-            cleanQuery = cleanQuery.Substring(7); // Remove "why is "
+            if (cleanQuery.StartsWith(pattern))
+            {
+                cleanQuery = cleanQuery.Substring(length).Trim();
+                break;
+            }
         }
 
         // Remove question marks and other punctuation that might interfere
-        cleanQuery = cleanQuery.Replace("?", "").Replace("!", "").Trim();
+        cleanQuery = cleanQuery.Replace("?", "").Replace("!", "").Replace(",", "").Trim();
 
-        // Handle specific problematic patterns
-        if (cleanQuery == "a computer scientist" || cleanQuery == "computer scientist")
+        // Handle articles and common prefixes
+        if (cleanQuery.StartsWith("the ") && cleanQuery.Length > 4)
         {
-            return "Computer scientist"; // More specific search
-        }
-        else if (cleanQuery == "matter")
-        {
-            return "Matter (physics)"; // More specific search for physics concept
+            cleanQuery = cleanQuery.Substring(4);
         }
         else if (cleanQuery.StartsWith("a ") && cleanQuery.Length > 2)
         {
-            // Remove leading "a " for better search results
             cleanQuery = cleanQuery.Substring(2);
         }
         else if (cleanQuery.StartsWith("an ") && cleanQuery.Length > 3)
         {
-            // Remove leading "an " for better search results
             cleanQuery = cleanQuery.Substring(3);
+        }
+
+        // Handle specific topic mappings for better search results
+        var topicMappings = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            {"computer scientist", "Computer scientist"},
+            {"matter", "Matter (physics)"},
+            {"ai", "Artificial intelligence"},
+            {"artificial intelligence", "Artificial intelligence"},
+            {"machine learning", "Machine learning"},
+            {"neural network", "Neural network"},
+            {"neural networks", "Neural network"},
+            {"deep learning", "Deep learning"},
+            {"quantum computing", "Quantum computing"},
+            {"climate change", "Climate change"},
+            {"global warming", "Global warming"},
+            {"covid", "COVID-19"},
+            {"coronavirus", "COVID-19"},
+            {"space", "Outer space"},
+            {"universe", "Universe"},
+            {"solar system", "Solar System"},
+            {"black hole", "Black hole"},
+            {"black holes", "Black hole"},
+            {"dna", "DNA"},
+            {"rna", "RNA"},
+            {"evolution", "Evolution"},
+            {"photosynthesis", "Photosynthesis"},
+            {"gravity", "Gravity"},
+            {"einstein", "Albert Einstein"},
+            {"newton", "Isaac Newton"},
+            {"shakespeare", "William Shakespeare"},
+            {"leonardo da vinci", "Leonardo da Vinci"}
+        };
+
+        if (topicMappings.TryGetValue(cleanQuery, out var mappedTopic))
+        {
+            return mappedTopic;
         }
 
         // If the query is too generic or empty after cleaning, provide a fallback
         if (string.IsNullOrWhiteSpace(cleanQuery) || cleanQuery.Length < 2)
         {
             return "Wikipedia"; // Fallback to Wikipedia main page
+        }
+
+        // Capitalize first letter for better Wikipedia search results
+        if (cleanQuery.Length > 0)
+        {
+            cleanQuery = char.ToUpperInvariant(cleanQuery[0]) + cleanQuery.Substring(1);
         }
 
         return cleanQuery;
